@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.jkl.mapper.GoodsMapper">
+  <resultMap id="BaseResultMap" type="com.example.jkl.pojo.Goods">
+    <!--
+      WARNING - @mbg.generated
+    -->
+    <id column="id" jdbcType="INTEGER" property="id" />
+    <result column="g_name" jdbcType="VARCHAR" property="gName" />
+    <result column="g_count" jdbcType="INTEGER" property="gCount" />
+    <result column="g_price" jdbcType="DOUBLE" property="gPrice" />
+    <result column="img1" jdbcType="VARCHAR" property="img1" />
+    <result column="img2" jdbcType="VARCHAR" property="img2" />
+    <result column="img3" jdbcType="VARCHAR" property="img3" />
+    <result column="img4" jdbcType="VARCHAR" property="img4" />
+    <result column="g_brief" jdbcType="VARCHAR" property="gBrief" />
+    <result column="g_state" jdbcType="SMALLINT" property="gState" />
+    <result column="g_address" jdbcType="VARCHAR" property="gAddress" />
+    <result column="create_time" jdbcType="TIMESTAMP" property="createTime" />
+    <result column="update_time" jdbcType="TIMESTAMP" property="updateTime" />
+  </resultMap>
+</mapper>
