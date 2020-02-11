@@ -17,10 +17,7 @@ public class GoodsDao {
     public Integer addGoods(Goods goods) {
         return goodsMapper.insert(goods);
     }
-    //批量插入
-    public Integer addGoodsList(List<Goods> goodsList){
-        return goodsMapper.insertList(goodsList);
-    }
+
     //批量删除
     public Integer deleteGoodsList(List<Integer> ids){
         Example example=new Example(Goods.class);
@@ -48,5 +45,14 @@ public class GoodsDao {
     public List<Goods> findAllGoods(){
         return goodsMapper.selectAll();
 
+    }
+    public Goods findGoodsById(Integer id){
+        return goodsMapper.selectByPrimaryKey(id);
+    }
+
+    public List<Goods> findGoodsByStoreId(Integer storeId){
+        Example example =new Example(Goods.class);
+        example.createCriteria().andEqualTo(storeId);
+        return goodsMapper.selectByExample(example);
     }
 }

@@ -85,12 +85,13 @@
         <table tableName="t_user" domainObjectName="User">
             <generatedKey column="id" sqlStatement="MySql" identity="true"/>
         </table>
-
-        <table tableName="t_user_order_ship" domainObjectName="UserOrderShip">
+        <table tableName="t_order_entity" domainObjectName="OrderEntity">
             <generatedKey column="id" sqlStatement="MySql" identity="true"/>
         </table>
-
-        <table tableName="t_user_car_ship" domainObjectName="UserCarShip">
+        <table tableName="t_address" domainObjectName="Address">
+            <generatedKey column="id" sqlStatement="MySql" identity="true"/>
+        </table>
+        <table tableName="t_store" domainObjectName="Store">
             <generatedKey column="id" sqlStatement="MySql" identity="true"/>
         </table>
         <!--<table tableName="alarm_sms_info" domainObjectName="AlarmSmsInfo">-->

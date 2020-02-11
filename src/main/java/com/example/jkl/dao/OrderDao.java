@@ -1,13 +1,13 @@
 package com.example.jkl.dao;
 
 import com.example.jkl.mapper.GoodsMapper;
+import com.example.jkl.mapper.OrderEntityMapper;
 import com.example.jkl.mapper.OrderMapper;
 import com.example.jkl.mapper.UserMapper;
 import com.example.jkl.pojo.Goods;
 import com.example.jkl.pojo.Order;
+import com.example.jkl.pojo.OrderEntity;
 import com.example.jkl.pojo.User;
-import com.example.jkl.pojo.UserOrderShip;
-import com.example.jkl.service.UserOrderShipService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 import tk.mybatis.mapper.entity.Example;
@@ -19,61 +19,56 @@ import java.util.List;
 public class OrderDao {
   @Autowired
   OrderMapper orderMapper;
+    @Autowired
+    OrderEntityMapper orderEntityMapper;
   @Autowired
   UserMapper userMapper;
   @Autowired
   GoodsMapper goodsMapper;
-  @Autowired
-    UserOrderShipService userOrderShipService;
+
     //添加订单
-    public Integer addOrder(Order order){
-        UserOrderShip userOrderShip = new UserOrderShip();
-        userOrderShip.setId(order.getId());
-        userOrderShip.setoId(order.getId());
-        userOrderShip.setuId(order.getuId());
-        userOrderShip.setCreateTime(new Date());
-        userOrderShip.setUpdateTime(new Date());
-     Integer s= userOrderShipService.addOrderRecord(userOrderShip);
-        System.out.println(s);
-     return orderMapper.insert(order);
+    public Integer addOrder(OrderEntity orderEntity){
+
+     return orderEntityMapper.insert(orderEntity);
     }
     //删除订单
     public Integer deleteOrderById(Integer id){
-        Integer integer = userOrderShipService.deleteOderRecord(id);
-        System.out.println(integer);
+
         return orderMapper.deleteByPrimaryKey(id);
     }
     //批量删除订单
     public  Integer deleteOrderList(List<Integer> ids ){
         Example example =new Example(Order.class);
         example.createCriteria().andIn("id",ids);
-       Integer x= userOrderShipService.deleteOrderListRecord(ids);
-        System.out.println(x);
+
+
     return orderMapper.deleteByExample(example);
     }
     //支付订单
-  public Integer payOrder(Order order){
+  public Integer payOrder(OrderEntity orderEntity){
 
-       User user=userMapper.selectByPrimaryKey(order.getuId());
-       Goods goods=goodsMapper.selectByPrimaryKey(order.getgId());
-      if (user.getLastMoney()>=order.getgPrice()*order.getgCount()){
-          user.setLastMoney(user.getLastMoney()-goods.getgPrice()*order.getgCount());
-          order.setoState((short) 1);
+       User user=userMapper.selectByPrimaryKey(orderEntity.getBuyerId());
+       Goods goods=goodsMapper.selectByPrimaryKey(orderEntity.getGoodsId());
+      if (user.getLastMoney()>=orderEntity.getPrice()*orderEntity.getCount()){
+          user.setLastMoney(user.getLastMoney()-goods.getPrice()*orderEntity.getCount());
+          Order order = orderMapper.selectByPrimaryKey(orderEntity.getId());
+          order.setStatus((short) 1);
           order.setUpdateTime(new Date());
           return orderMapper.updateByPrimaryKeySelective(order);
       }else {
-          return 0;//正常结束
+          return -1;//正常结束
       }
   }
   //退单
-  public Integer backOrder(Order order){
-        if (order.getoState()==1){
+  public Integer backOrder(OrderEntity orderEntity){
+      Order order = orderMapper.selectByPrimaryKey(orderEntity.getId());
+        if (order.getStatus()==1){
           //已支付可以退单
-            User user = userMapper.selectByPrimaryKey(order.getuId());
-            user.setLastMoney(user.getLastMoney()+order.getgPrice()*order.getgCount());
+            User user = userMapper.selectByPrimaryKey(order.getBuyerId());
+            user.setLastMoney(user.getLastMoney()+orderEntity.getPrice()*orderEntity.getCount());
             userMapper.updateByPrimaryKeySelective(user);
             //订单状态设为——1表示退单
-            order.setoState((short) -1);
+            order.setStatus((short) -1);
             order.setUpdateTime(new Date());
         return orderMapper.updateByPrimaryKeySelective(order);
         }else {
@@ -85,6 +80,15 @@ public class OrderDao {
     //查看所有订单
     public List<Order> findAllOrder(){
         return orderMapper.selectAll();
+    }
+
+    public List<Order> findOrderByOrderNo(Integer orderNo){
+         Example example =new Example(Order.class);
+         example.createCriteria().andEqualTo("orderNo",orderNo);
+        return orderMapper.selectByExample(example);
+    }
+    public Integer update(Order order){
+        return  orderMapper.updateByPrimaryKey(order);
     }
 
 }
