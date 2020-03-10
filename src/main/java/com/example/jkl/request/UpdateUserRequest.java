@@ -6,5 +6,5 @@ import lombok.Data;
 public class UpdateUserRequest {
     private String uImg;
     private String nickName;
-    private Integer phone;
+    private Long phone;
 }

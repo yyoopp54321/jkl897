@@ -2,8 +2,9 @@ package com.example.jkl.controller;
 
 import com.example.jkl.common.Const;
 import com.example.jkl.common.ServerResponse;
-import com.example.jkl.pojo.Address;
 import com.example.jkl.pojo.User;
+import com.example.jkl.request.AddAddressRequest;
+import com.example.jkl.request.UpdateAddressRequest;
 import com.example.jkl.service.AddressService;
 import com.example.jkl.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,45 +22,34 @@ public class SellerAddressController {
     private AddressService addressService;
 
     @PostMapping(value = "add/seller/address")
-    public ServerResponse add(@RequestBody Address address, HttpSession session) {
+    public ServerResponse add(@RequestBody AddAddressRequest addAddressRequest, HttpSession session) {
         User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
         }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("不是商家用户,不能在商家端添加地址");
-        }
-        address.setUserId(currentUser.getId());
-        address.setRole(currentUser.getRole());
-        return addressService.addAddress(address);
+        return addressService.addAddress(addAddressRequest);
     }
 
    @GetMapping(value = "select/seller/address")
-    public ServerResponse select(@RequestBody Integer addressId, HttpSession session) {
+    public ServerResponse select(@RequestParam Integer userId, HttpSession session) {
         User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
         }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("不是商家用户,不能查看商家地址");
-        }
-        return addressService.selectAddress(addressId,currentUser.getId());
+
+        return addressService.selectAddress(userId);
     }
 
 
 
     @PutMapping(value = "update/seller/address")
-    public ServerResponse update(@RequestBody Address address, HttpSession session) {
+    public ServerResponse update(@RequestBody UpdateAddressRequest updateAddressRequest, HttpSession session) {
         User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
         }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("不是商家用户,不能更新商家地址");
-        }
-        address.setUserId(currentUser.getId());
-        address.setRole(currentUser.getRole());
-        return addressService.updateAddress(address);
+
+        return addressService.updateAddress(updateAddressRequest);
     }
 
     @DeleteMapping(value = "delete/seller/address")
@@ -68,9 +58,6 @@ public class SellerAddressController {
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
         }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("不是商家用户,不能删除商家地址");
-        }
-        return addressService.deleteAddress(addressId, currentUser.getRole(), currentUser.getId());
+        return addressService.deleteAddress(addressId, currentUser.getId());
     }
 }

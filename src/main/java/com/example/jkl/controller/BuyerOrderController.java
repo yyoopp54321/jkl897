@@ -1,9 +1,12 @@
 package com.example.jkl.controller;
 
+import com.example.jkl.common.Const;
 import com.example.jkl.common.ServerResponse;
 import com.example.jkl.pojo.Car;
+import com.example.jkl.pojo.Order;
 import com.example.jkl.pojo.OrderEntity;
-import com.example.jkl.response.FindOrderResponse;
+import com.example.jkl.pojo.User;
+import com.example.jkl.request.PayOrderRequest;
 import com.example.jkl.service.OrderService;
 import com.example.jkl.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,12 +24,15 @@ public class BuyerOrderController {
   @Autowired
   UserService userService;
   //添加订单
-  @PostMapping(value = "add/order",produces ="text/html;charset=utf-8")
-  public ServerResponse addOrder(@RequestBody OrderEntity orderEntity, HttpSession session){
-
-      return orderService.addOrder( orderEntity);
+  @PostMapping(value = "add/orderEntity",produces ="text/html;charset=utf-8")
+  public ServerResponse addOrderEntity(@RequestBody OrderEntity orderEntity, HttpSession session){
+    User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
+    if (null == currentUser) {
+      return ServerResponse.createByNeedLogin();
+    }
+      return orderService.addOrderEntity(orderEntity);
   }
-  //删除订单
+  //取消未支付的订单
   @DeleteMapping (value = "delete/order/by/id")
     public ServerResponse deleteOrder(@RequestBody Integer id){
       return orderService.deleteOrder(id);
@@ -38,26 +44,26 @@ public class BuyerOrderController {
     }
     //支付订单
     @PutMapping(value = "pay/order")
-    public ServerResponse payOrder(@RequestBody OrderEntity orderEntity){
-      return orderService.payOrder(orderEntity);    }
+    public ServerResponse payOrder(@RequestBody PayOrderRequest payOrderRequest){
+      return orderService.payOrder(payOrderRequest);    }
     //退订单
     @PutMapping(value = "back/order")
-    public ServerResponse backOrder(@RequestBody OrderEntity orderEntity){
-      return orderService.backOrder(orderEntity);
+    public ServerResponse backOrder(@RequestBody Order order){
+      return orderService.backOrder(order);
     }
     //查看所有订单
-    @GetMapping(value = "select/order/by/list")
-    public List<FindOrderResponse> findAllOrder(){
-      return orderService.findAllOrder();
+    @GetMapping(value = "select/order/by/userId")
+    public Order finOrderById(Integer buyerId){
+      return orderService.finOrderById(buyerId);
     }
     //查看订单号
   @GetMapping(value = "find/order/by/orderNo")
-     public ServerResponse findOrderByOrderNo(@RequestBody Integer orderNo){
+     public ServerResponse findOrderByOrderNo(@RequestParam Integer orderNo){
     return orderService.findOrderByOrderNo(orderNo);
      }
-     //查看订单的实体列
+     //查看订单的实体列从购物车获取
      @GetMapping(value = "find/orderEntityList")
-     public ServerResponse getOrderEntityList(@RequestBody List<Car> carList){
+     public ServerResponse getOrderEntityList(@RequestParam List<Car> carList){
     return orderService.getOrderEntityList(carList);
      }
 }

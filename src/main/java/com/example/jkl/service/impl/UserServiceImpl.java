@@ -8,25 +8,30 @@ import com.example.jkl.request.RegisterUserRequest;
 import com.example.jkl.request.UpdateUserLastMoneyRequest;
 import com.example.jkl.request.UpdateUserPasswordRequest;
 import com.example.jkl.request.UpdateUserRequest;
+import com.example.jkl.response.FindUserInfo;
 import com.example.jkl.service.UserService;
 import com.example.jkl.utils.EncryptUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Random;
-
+@Slf4j
 @Service
 public class UserServiceImpl implements UserService {
     @Autowired
     UserDao userDao;
 
+
     @Override
     public ServerResponse register(RegisterUserRequest registerUserRequest) {
-        List<User> userByName = findUserByName(registerUserRequest.getUsername());
-        if (!userByName.equals(0)){
+        List<User> list = findUserByName(registerUserRequest.getUsername());
+        if (!list.isEmpty()){
             return ServerResponse.createByErrorMessage("用户名已存在");
         }
         User user = new User();
@@ -43,13 +48,14 @@ public class UserServiceImpl implements UserService {
         return    ServerResponse.createByErrorMessage("注册失败，请检查");
     }
     @Override
-    public  ServerResponse login(String username, String password) {
+    public ServerResponse login(String username, String password) {
 
-        List<User> userList = userDao.loginUser(username, password);
-        if (userList==null){
+        User user = userDao.loginUser(username, password);
+        if (user==null){
             return  ServerResponse.createByErrorMessage("用户名或密码错误");
         }
-        return  ServerResponse.createBySuccessData("登陆成功");
+
+        return  ServerResponse.createBySuccessMessageAndData("登陆成功",user);
     }
 
     @Override
@@ -101,10 +107,16 @@ public class UserServiceImpl implements UserService {
     @Override
     public ServerResponse getUserInformation(Integer id) {
         User user = userDao.findUser(id);
-        if (null == user) {
-            return ServerResponse.createByErrorMessage("找不到该用户的个人信息");
-        }
-        return ServerResponse.createBySuccessData(user);
+        FindUserInfo findUserInfo = new FindUserInfo();
+        BeanUtils.copyProperties(user,findUserInfo);
+        return ServerResponse.createBySuccessData(findUserInfo);
+    }
+    public ServerResponse getUserInformation1(String openId) {
+        User userByOpenId = userDao.findUserByOpenId(openId);
+        User user = userDao.findUser(userByOpenId.getId());
+        FindUserInfo findUserInfo = new FindUserInfo();
+        BeanUtils.copyProperties(user,findUserInfo);
+        return ServerResponse.createBySuccessData(findUserInfo);
     }
     @Override
     public Integer updateUserLastMoney(UpdateUserLastMoneyRequest updateUserLastMoneyRequest,String username) {
@@ -113,6 +125,21 @@ public class UserServiceImpl implements UserService {
     return userDao.updateUserByUsername(user,username);
     }
 
+ public User findUserByOpenId(String openId ){
+        return userDao.findUserByOpenId(openId);
+ }
+    @Override
+    public Integer saveOrUpdate(User user) {
+        User userByOpenId = userDao.findUserByOpenId(user.getOpenId());
+        if(userByOpenId==null){
+            user.setCreateTime(new Date());
+            user.setRole((short) 0);
+            System.out.println(user.getOpenId());
+            return userDao.addUser(user);
+        }else {
+            return userDao.updateUser(user);
+        }
+    }
     @Override
     public String randomSafetyCode(){
         char[] str = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -132,6 +159,12 @@ public class UserServiceImpl implements UserService {
         }
         return stringBuffer.toString();
     }
+
+    @Override
+    public User getByToken(String token) {
+        return userDao.getByToken(token);
+    }
+
 
 
 }

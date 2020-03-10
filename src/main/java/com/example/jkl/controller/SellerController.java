@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
 import javax.servlet.http.HttpSession;
+import java.util.List;
 
 @RestController
 @EnableSwagger2
@@ -29,22 +30,26 @@ public class SellerController {
      * @return
      */
     @GetMapping(value = "login/seller")
-    public ServerResponse login(@RequestBody String username,@RequestBody String password, HttpSession session){
-        if (StringUtils.isBlank(username) || StringUtils.isBlank(password)){
+    public ServerResponse login(@RequestParam String username , @RequestParam String password, HttpSession session) {
+        if (StringUtils.isBlank(username) || StringUtils.isBlank(password)) {
             return ServerResponse.createByIllegalArgument();
         }
-        ServerResponse response = userService.login(username, password);
-        if (!response.isSuccess()) {
-            return response;
+        ServerResponse login = userService.login(username, password);
+        if (!login .isSuccess()){
+            return login;
         }
-        User user = (User)response.getData();
+        List<User> list = userService.findUserByName(username);
+        User user = list.get(0);
+
         if (userService.checkRole(user.getRole(), Const.Role.ROLE_SELLER)) {
-            // 用户登陆成功，将其信息放入session中
-            session.setAttribute(Const.CURRENT_USER, user);
-            return response;
+                // 用户登陆成功，将其信息放入session中
+                session.setAttribute(Const.CURRENT_USER, user);
+                return login;
+
         }
-        return ServerResponse.createByErrorMessage("非商家用户");
-    }
+            return ServerResponse.createByErrorMessage("非商家用户,请注册商家用户");
+        }
+
 
     /**
      * 注册商家用户
@@ -67,25 +72,14 @@ public class SellerController {
      * @return
      */
     @PutMapping(value = "update/seller")
-    public ServerResponse update(@RequestBody UpdateUserRequest updateUserRequest,HttpSession session){
+    public ServerResponse updateSeller(@RequestBody UpdateUserRequest updateUserRequest,HttpSession session){
         User user = (User) session.getAttribute(Const.CURRENT_USER);
         if (null == user) {
             return ServerResponse.createByNeedLogin("用户未登录,请先登陆");
         }
-        if (!userService.checkRole(user.getRole(),Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("不是商家，无法修改商家信息");
-        }
 
-        ServerResponse response = userService.updateUser(updateUserRequest);
-        if (!response.isSuccess()) {
-            return response;
-        }
-        // 更新session中存储的个人信息
-        User updateUser = (User)response.getData();
-        updateUser.setUsername(user.getUsername());
-        updateUser.setRole(user.getRole());
-        session.setAttribute(Const.CURRENT_USER, updateUser);
-        return response;
+        return userService.updateUser(updateUserRequest);
+
     }
 
     /**

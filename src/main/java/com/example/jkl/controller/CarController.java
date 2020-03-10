@@ -4,6 +4,7 @@ import com.example.jkl.common.Const;
 import com.example.jkl.common.ServerResponse;
 import com.example.jkl.pojo.User;
 import com.example.jkl.request.AddCarRequest;
+import com.example.jkl.request.UpdateCarRequest;
 import com.example.jkl.response.FindCarResponse;
 import com.example.jkl.service.CarService;
 import com.example.jkl.service.UserService;
@@ -22,9 +23,9 @@ public class CarController {
     @Autowired
     UserService userService;
     //查看购物车所有记录
-    @GetMapping(value = "select/all/car")
-    public List<FindCarResponse> findAllCar(){
-        return carService.findAllCar();
+    @GetMapping(value = "find/car")
+    public List<FindCarResponse> findCarByUserId(Integer userId){
+        return carService.findCarByUserId(userId);
     }
     //删除购物车记录
     @DeleteMapping(value = "delete/car/by/id")
@@ -38,9 +39,7 @@ public class CarController {
        if (null == currentUser) {
            return ServerResponse.createByNeedLogin();
        }
-       if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_BUYER)) {
-           return ServerResponse.createByErrorMessage("您不是买家,请使用买家登陆");
-       }
+
        if (null == addCarRequest.getGoodsId() || null == addCarRequest.getCount()) {
            return ServerResponse.createByIllegalArgument();
        }
@@ -56,6 +55,11 @@ public class CarController {
             return ServerResponse.createByErrorMessage("删除失败");
         }else {
             return ServerResponse.createBySuccessData("删除成功");}
+    }
+    //修改商品数量
+    @PutMapping(value = "update/car/GoodsCount")
+    public Integer updateCarGoodsCount(UpdateCarRequest updateCarRequest){
+        return carService.updateCarGoodsCount(updateCarRequest);
     }
 }
 

@@ -11,29 +11,27 @@ import java.util.List;
 public class AddressDao {
     @Autowired
     AddressMapper addressMapper;
-    public List<Address> findAddressByUserId(Integer userId){
+    public Address findAddressByUserId(Integer userId){
         Example example=new Example(Address.class);
         example.createCriteria().andEqualTo("userId",userId);
-       return addressMapper.selectByExample(example);
+       return addressMapper.selectOneByExample(example);
     }
     public Integer add(Address address){
         return addressMapper.insert(address);
     }
-    public List<Address> delete(Integer addressId, Short role, Integer userId){
+    public List<Address> delete(Integer addressId,  Integer userId){
         Example example=new Example(Address.class);
         example.createCriteria()
                 .andEqualTo("id",addressId)
-                .andEqualTo("role",role)
                 .andEqualTo("userId",userId);
         return  addressMapper.selectByExample(example);
     }
     public Integer  update(Address address){
         return  addressMapper.updateByPrimaryKey(address);
     }
-    public  List<Address> select(Integer addressId, Integer userId){
+    public  List<Address> select(Integer userId){
         Example example=new Example(Address.class);
         example.createCriteria()
-                .andEqualTo("id",addressId)
                 .andEqualTo("userId",userId);
         return addressMapper.selectByExample(example);
     }

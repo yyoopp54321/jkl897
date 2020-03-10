@@ -4,7 +4,6 @@ import com.example.jkl.mapper.GoodsMapper;
 import com.example.jkl.mapper.OrderEntityMapper;
 import com.example.jkl.mapper.OrderMapper;
 import com.example.jkl.mapper.UserMapper;
-import com.example.jkl.pojo.Goods;
 import com.example.jkl.pojo.Order;
 import com.example.jkl.pojo.OrderEntity;
 import com.example.jkl.pojo.User;
@@ -27,9 +26,12 @@ public class OrderDao {
   GoodsMapper goodsMapper;
 
     //添加订单
-    public Integer addOrder(OrderEntity orderEntity){
+    public Integer addOrderEntity(OrderEntity orderEntity){
 
      return orderEntityMapper.insert(orderEntity);
+    }
+    public Integer addorder(Order order){
+        return orderMapper.insert(order);
     }
     //删除订单
     public Integer deleteOrderById(Integer id){
@@ -45,19 +47,9 @@ public class OrderDao {
     return orderMapper.deleteByExample(example);
     }
     //支付订单
-  public Integer payOrder(OrderEntity orderEntity){
 
-       User user=userMapper.selectByPrimaryKey(orderEntity.getBuyerId());
-       Goods goods=goodsMapper.selectByPrimaryKey(orderEntity.getGoodsId());
-      if (user.getLastMoney()>=orderEntity.getPrice()*orderEntity.getCount()){
-          user.setLastMoney(user.getLastMoney()-goods.getPrice()*orderEntity.getCount());
-          Order order = orderMapper.selectByPrimaryKey(orderEntity.getId());
-          order.setStatus((short) 1);
-          order.setUpdateTime(new Date());
-          return orderMapper.updateByPrimaryKeySelective(order);
-      }else {
-          return -1;//正常结束
-      }
+  public Integer updateOrder(Order order){
+        return orderMapper.updateByPrimaryKeySelective(order);
   }
   //退单
   public Integer backOrder(OrderEntity orderEntity){
@@ -89,6 +81,20 @@ public class OrderDao {
     }
     public Integer update(Order order){
         return  orderMapper.updateByPrimaryKey(order);
+    }
+    public List<OrderEntity> findOrderByStoreId(Integer storeId){
+        Example example=new Example(OrderEntity.class);
+        example.createCriteria().andEqualTo("storeId",storeId);
+      return   orderEntityMapper.selectByExample(example);
+    }
+    public Order finOrderById(Integer buyer_id){
+        Example example=new Example(Order.class);
+        example.createCriteria().andEqualTo("buyer_id",buyer_id);
+
+        return (Order) orderMapper.selectByExample(example);
+    }
+    public Order findOrderByPrimaryKey(Integer id){
+        return orderMapper.selectByPrimaryKey(id);
     }
 
 }

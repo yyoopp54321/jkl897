@@ -37,6 +37,12 @@ public class CarDao {
        return carMapper.selectByExample(example);
 
     }
+   public Integer update(Car car){
+        return carMapper.updateByPrimaryKey(car);
+   }
+   public Car findCarById(Integer id){
+        return carMapper.selectByPrimaryKey(id);
+   }
 
     //查看所有记录
      public List<Car> findAllCar(){

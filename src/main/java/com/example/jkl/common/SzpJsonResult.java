@@ -21,9 +21,6 @@ public class SzpJsonResult<T> {
             return new SzpJsonResult(data);
         }
 
-        public static SzpJsonResult ok() {
-            return new SzpJsonResult(null);
-        }
 
         public static SzpJsonResult errorMsg(String msg) {
             return new SzpJsonResult(500, msg, null);

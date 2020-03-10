@@ -4,18 +4,18 @@ import com.example.jkl.common.Const;
 import com.example.jkl.common.ServerResponse;
 import com.example.jkl.dao.*;
 import com.example.jkl.pojo.*;
-import com.example.jkl.response.FindOrderResponse;
+import com.example.jkl.request.PayOrderRequest;
 import com.example.jkl.service.OrderService;
-import org.springframework.beans.BeanUtils;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     @Autowired
     OrderDao orderDao;
@@ -23,22 +23,31 @@ public class OrderServiceImpl implements OrderService {
     AddressDao addressDao;
     @Autowired
     CarDao carDao;
-     @Autowired
+    @Autowired
     GoodsDao goodsDao;
     @Autowired
+    UserDao userDao;
+
+    @Autowired
     StoreDao storeDao;
+
     @Override
-    public ServerResponse addOrder(OrderEntity orderEntity ) {
-        List<Address> addressByUserId = addressDao.findAddressByUserId(orderEntity.getBuyerId());
-        if (null == addressByUserId) {
+    public ServerResponse addOrderEntity(OrderEntity orderEntity) {
+        Address address = addressDao.findAddressByUserId(orderEntity.getBuyerId());
+        if (null == address) {
             return ServerResponse.createByErrorMessage("订单创建失败,未找到对应地址");
         }
-        List<Car> carList = carDao.selectCarByBuyerId(orderEntity.getBuyerId());
+        Order order = new Order();
+        order.setId(orderEntity.getId());
+        order.setBuyerId(orderEntity.getBuyerId());
+        order.setPayment(null);
+        order.setOrderNo(orderEntity.getOrderNo());
+        order.setAddressId(address.getId());
+        order.setStatus((short) 0);
+        order.setUpdateTime(new Date());
+        order.setCreateTime(new Date());
 
-        if (CollectionUtils.isEmpty(carList)) {
-            return ServerResponse.createByErrorMessage("购物车中没有任何选中的商品");
-        }
-        Integer integer = orderDao.addOrder(orderEntity);
+        Integer integer = orderDao.addOrderEntity(orderEntity);
         if (integer > 0) {
             return ServerResponse.createBySuccessMessage("添加成功");
         }
@@ -56,38 +65,52 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public ServerResponse payOrder(OrderEntity orderEntity) {
-        Integer integer = orderDao.payOrder(orderEntity);
-        if (integer > 0) {
-            return ServerResponse.createBySuccessMessage("支付成功");
+    public ServerResponse payOrder(PayOrderRequest payOrderRequest) {
+        for (OrderEntity orderEntity: payOrderRequest.getOrderEntityList()) {
+            User user = userDao.findUser(orderEntity.getBuyerId());
+            if (user.getLastMoney() >= payOrderRequest.getTotalMoneys()) {
+                user.setLastMoney(user.getLastMoney() - payOrderRequest.getTotalMoneys());
+                Integer integer = userDao.updateUser(user);
+                log.info("修改用户余额—{}", integer);
+                Goods goods = goodsDao.findGoodsById(orderEntity.getGoodsId());
+                goods.setStock(goods.getStock() - orderEntity.getCount());
+                Integer integer1 = goodsDao.updateGoods(goods);
+                log.info("减少库存数量-{}", integer1);
+                Order order = orderDao.findOrderByPrimaryKey(orderEntity.getId());
+                order.setStatus((short) 1);
+                order.setPayment(payOrderRequest.getTotalMoneys());
+                order.setUpdateTime(new Date());
+                Integer update = orderDao.update(order);
+                return ServerResponse.createBySuccessMessageAndData("支付成功", update);
+            } else {
+                return ServerResponse.createByErrorMessage("支付失败");
+            }
+
         }
-        return ServerResponse.createByErrorMessage("支付失败");
+      return ServerResponse.createBySuccess();
     }
 
     @Override
-    public ServerResponse backOrder(OrderEntity orderEntity) {
-        Integer integer = orderDao.backOrder(orderEntity);
-        if (integer > 0) {
-            return ServerResponse.createBySuccessMessage("退单成功");
+    public ServerResponse backOrder(Order order) {
+        if (order.getStatus()==1){
+            //已支付可以退单
+            User user = userDao.findUser(order.getBuyerId());
+            user.setLastMoney(user.getLastMoney()+order.getPayment());
+            userDao.updateUser(user);
+            //订单状态设为——1表示退单
+            order.setStatus((short) -1);
+            order.setUpdateTime(new Date());
+            Integer update = orderDao.update(order);
+            return ServerResponse.createBySuccessMessageAndData("退单成功",update);
+        }else {
+            //无法退单 正常结束
+            return ServerResponse.createByError();
         }
-        return ServerResponse.createByErrorMessage("退单失败");
     }
 
     @Override
-    public List<FindOrderResponse> findAllOrder() {
-        List<Order> allOrder = orderDao.findAllOrder();
-        return showFIndAllOrder(allOrder);
-    }
-    private List<FindOrderResponse> showFIndAllOrder(List<Order> orderList){
-        List<FindOrderResponse> list=new ArrayList<>();
-        for (Order order:orderList){
-            FindOrderResponse findOrderResponse = new FindOrderResponse();
-            BeanUtils.copyProperties(order,findOrderResponse);
-            findOrderResponse.setTotalMoney(findOrderResponse.getGPrice()*findOrderResponse.getGCount());
-            list.add(findOrderResponse);
-
-        }
-        return list;
+    public List<OrderEntity> findOrderByStoreId(Integer storeId) {
+        return orderDao.findOrderByStoreId(storeId);
     }
 
     @Override
@@ -112,7 +135,7 @@ public class OrderServiceImpl implements OrderService {
                 return ServerResponse.createByErrorMessage("商品：" + goods.getName() + "已下架");
             }
             if (goods.getStock() < car.getCount()) {
-                return ServerResponse.createByErrorMessage("商品" + goods.getName() +"库存不足,只剩下：" + goods.getStock());
+                return ServerResponse.createByErrorMessage("商品" + goods.getName() + "库存不足,只剩下：" + goods.getStock());
             }
 
             OrderEntity orderEntity = new OrderEntity();
@@ -120,17 +143,18 @@ public class OrderServiceImpl implements OrderService {
             orderEntity.setStoreId(goods.getStoreId());
             // 通过店铺获取商家Id
             Store store = storeDao.findStoreById(goods.getStoreId());
-            orderEntity.setSellerId(store.getSellerId());
+            orderEntity.setStoreId(store.getId());
             orderEntity.setGoodsId(goods.getId());
             orderEntity.setGoodsName(goods.getName());
             orderEntity.setGoodsImage(goods.getMainImageUrl());
             orderEntity.setPrice(goods.getPrice());
             orderEntity.setCount(car.getCount());
-            orderEntity.setTotalPrice(goods.getPrice()*car.getCount());
+            orderEntity.setTotalPrice(goods.getPrice() * car.getCount());
             orderEntity.setCreateTime(new Date());
 
             orderEntityList.add(orderEntity);
         }
+
         return ServerResponse.createBySuccessData(orderEntityList);
     }
 
@@ -147,5 +171,13 @@ public class OrderServiceImpl implements OrderService {
         }
         return ServerResponse.createByError();
     }
+
+    public Order finOrderById(Integer buyerId) {
+
+        return orderDao.finOrderById(buyerId);
+    }
+
+
+
 
 }

@@ -4,17 +4,18 @@ import lombok.Data;
 
 @Data
 public class AddGoodsRequest {
+
+
     //名称
     private String name;
     //数量
-    private Integer gCount;
+    private Integer stock;
     //单价
-    private Double gPrice;
+    private Double price;
     private String mainImageUrl;
     private String subImagesUrl;
-
    //简要
-    private String gBrief;
+    private String brief;
     //上下架
     private Short status;
     //地址

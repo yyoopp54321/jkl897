@@ -38,13 +38,18 @@ public class GoodsDao {
     //查找商品(通过商品名称模糊查找)
     public List<Goods> findGoodsByGName(String gName) {
         Example example = new Example(Goods.class);
-        example.createCriteria().andLike("gName", "%" + gName + "%");
+        example.createCriteria().andLike("name", "%" + gName + "%");
         return goodsMapper.selectByExample(example);
     }
     //通过编号查找商品
     public List<Goods> findAllGoods(){
         return goodsMapper.selectAll();
 
+    }
+    public Integer findGoodsCount(String gName){
+        Example example = new Example(Goods.class);
+        example.createCriteria().andLike("name", "%" + gName + "%");
+        return goodsMapper.selectCountByExample(example);
     }
     public Goods findGoodsById(Integer id){
         return goodsMapper.selectByPrimaryKey(id);

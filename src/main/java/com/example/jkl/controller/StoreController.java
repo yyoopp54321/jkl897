@@ -20,7 +20,7 @@ public class StoreController {
     @Autowired
     StoreService storeService;
     @PostMapping (value = "add/store")
-    public ServerResponse add(@RequestBody String storeName, @RequestBody String detail, HttpSession session){
+    public ServerResponse add(@RequestBody String storeName,@RequestBody String detail, HttpSession session){
         User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
@@ -31,7 +31,7 @@ public class StoreController {
         return storeService.addStore(storeName, detail, currentUser.getId());
     }
     @GetMapping(value = "select/storeDetail")
-    public ServerResponse getStoreDetail(@RequestBody Integer storeId, HttpSession session){
+    public ServerResponse getStoreDetail(@RequestParam Integer storeId, HttpSession session){
         User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();

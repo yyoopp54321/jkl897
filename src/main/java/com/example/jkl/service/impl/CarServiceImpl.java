@@ -3,8 +3,10 @@ package com.example.jkl.service.impl;
 import com.example.jkl.common.ServerResponse;
 import com.example.jkl.dao.CarDao;
 import com.example.jkl.dao.GoodsDao;
+import com.example.jkl.dao.UserDao;
 import com.example.jkl.pojo.Car;
 import com.example.jkl.request.AddCarRequest;
+import com.example.jkl.request.UpdateCarRequest;
 import com.example.jkl.response.FindCarResponse;
 import com.example.jkl.service.CarService;
 import org.springframework.beans.BeanUtils;
@@ -20,6 +22,8 @@ public class CarServiceImpl implements CarService {
     CarDao carDao;
     @Autowired
     GoodsDao goodsDao;
+    @Autowired
+    UserDao userDao;
 
     @Override
     public ServerResponse addCar(AddCarRequest addCarRequest) {
@@ -46,11 +50,6 @@ public class CarServiceImpl implements CarService {
                 return ServerResponse.createBySuccessData("删除成功");}
         }
 
-    @Override
-    public List<FindCarResponse> findAllCar() {
-        List<Car> allCar = carDao.findAllCar();
-        return  showFindAllCar(allCar);
-    }
     private List<FindCarResponse> showFindAllCar(List<Car> carList){
         List<FindCarResponse> list=new ArrayList<>();
         for (Car car:carList){
@@ -60,7 +59,17 @@ public class CarServiceImpl implements CarService {
         }
         return list;
     }
+    @Override
+    public List<FindCarResponse> findCarByUserId(Integer buyerId){
 
+        List<Car> list = carDao.selectCarByBuyerId(buyerId);
+        return  showFindAllCar(list);
+    }
+    public Integer updateCarGoodsCount(UpdateCarRequest updateCarRequest){
+        Car car = carDao.findCarById(updateCarRequest.getId());
+        car.setCount(updateCarRequest.getCount());
+        return carDao.update(car);
+    }
     @Override
     public Integer deleteCarList(List<Integer> ids) {
         return carDao.deleteCarList(ids);

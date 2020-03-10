@@ -21,12 +21,12 @@ public class UserDao {
         return userMapper.selectByPrimaryKey(id);
     }
     //登陆(username password)
-    public List<User> loginUser(String username, String password){
+    public User loginUser(String username, String password){
         Example example=new Example(User.class);
         example.createCriteria()
                 .andEqualTo("username",username)
                 .andEqualTo("password",password);
-        return  userMapper.selectByExample(example);
+        return  userMapper.selectOneByExample(example);
     }
 
     //删除用户信息
@@ -47,5 +47,15 @@ public class UserDao {
     public Integer updateUser(User user){
 
         return userMapper.updateByPrimaryKeySelective(user);
+    }
+    public User findUserByOpenId(String openId){
+        Example example = new Example(User.class);
+        example.createCriteria().andEqualTo("openId",openId);
+        return userMapper.selectOneByExample(example);
+    }
+    public User getByToken(String token){
+        Example example = new Example(User.class);
+        example.createCriteria().andEqualTo("token",token);
+        return userMapper.selectOneByExample(example);
     }
 }

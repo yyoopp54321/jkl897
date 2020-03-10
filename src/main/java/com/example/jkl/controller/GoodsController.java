@@ -6,16 +6,14 @@ import com.example.jkl.pojo.User;
 import com.example.jkl.request.AddGoodsRequest;
 import com.example.jkl.request.UpdateGoodsRequest;
 import com.example.jkl.request.UpdateGoodsStatusRequest;
-import com.example.jkl.response.FindGoodsResponse;
+import com.example.jkl.response.GetAllGoodsResponse;
 import com.example.jkl.service.GoodsService;
+import com.example.jkl.service.OrderService;
 import com.example.jkl.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 import springfox.documentation.swagger2.annotations.EnableSwagger2;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import java.util.List;
 
@@ -26,10 +24,13 @@ public class GoodsController {
     GoodsService goodsService;
     @Autowired
     UserService userService;
+    @Autowired
+    OrderService orderService;
+
     //添加商品
     @PostMapping(value = "add/goods")
     public ServerResponse addGoods(@RequestBody AddGoodsRequest addGoodsRequest, HttpSession session){
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
+       User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
         if (null == currentUser) {
             return ServerResponse.createByNeedLogin();
         }
@@ -62,7 +63,7 @@ public class GoodsController {
 
     //封页查找商品
     @GetMapping(value = "select/goods/by/name")
-    public List<FindGoodsResponse> findGoodsByGName(@RequestBody String gName, Integer pageNumber, Integer pageSize){
+    public GetAllGoodsResponse findGoodsByGName(@RequestParam String gName,@RequestParam Integer pageNumber, @RequestParam Integer pageSize){
         return goodsService.findGoodsByGName(gName,pageNumber,pageSize);
     }
     @PutMapping(value = "update/goods/status")
@@ -79,8 +80,6 @@ public class GoodsController {
         }
         return goodsService.setStatus(updateGoodsStatusRequest);
     }
-
-
     //批量删除
     @DeleteMapping(value = "delete/goods/by/list")
     public ServerResponse deleteGoodsList(@RequestBody List<Integer> ids){
@@ -88,56 +87,17 @@ public class GoodsController {
     }
     //通过店名去找
     @GetMapping(value = "select/goods/by/storeName")
-    public ServerResponse searchByStoreName(@RequestBody String storeName,@RequestBody Integer pageNumber,@RequestBody Integer pageSize){
+    public ServerResponse searchByStoreName(@RequestParam String storeName,@RequestParam Integer pageNumber,@RequestParam Integer pageSize){
         return goodsService.searchByStoreName(storeName,pageNumber,pageSize);
     }
-    @RequestMapping("upload")
-    public ServerResponse upload(@RequestParam(value = "upload_file", required = false) MultipartFile file,
-                                 HttpSession session, HttpServletRequest request) {
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
-        if (null == currentUser) {
-            return ServerResponse.createByNeedLogin();
-        }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("您不是商家，不具有上传文件权限");
-        }
-        String uploadDir = request.getSession().getServletContext().getRealPath("upload");
-        return goodsService.upload(file, uploadDir);
-    }
 
-
-    @RequestMapping("product-image-upload")
-    public ServerResponse productImageUpload(@RequestParam(value = "productId", required = false)Integer productId,
-                                             @RequestParam(value = "mainImage", required = false)MultipartFile mainImage,
-                                             @RequestParam(value = "subImage", required = false) List<MultipartFile> subImage,
-                                             HttpSession session, HttpServletRequest request) {
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
-        if (null == currentUser) {
-            return ServerResponse.createByNeedLogin();
-        }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("您不是商家，不具有上传文件权限");
-        }
-        String uploadDir = request.getSession().getServletContext().getRealPath("upload");
-        return goodsService.productImageUpload(productId, mainImage, subImage,uploadDir);
-    }
-
-
-
-
-    @RequestMapping("rich_text_upload")
-    public ServerResponse richTextUpload(@RequestParam(value = "upload_file", required = false)MultipartFile file,
-                                         HttpSession session, HttpServletRequest request, HttpServletResponse response) {
-        User currentUser = (User)session.getAttribute(Const.CURRENT_USER);
-        if (null == currentUser) {
-            return ServerResponse.createByNeedLogin();
-        }
-        if (!userService.checkRole(currentUser.getRole(), Const.Role.ROLE_SELLER)) {
-            return ServerResponse.createByErrorMessage("您不是商家，不具有上传文件权限");
-        }
-        String uploadDir = request.getSession().getServletContext().getRealPath("upload");
-        response.addHeader("Access-Control-Allow-Headers","X-File-Name");
-        return  goodsService.upload(file, uploadDir);
-    }
+   @GetMapping(value = "get/goods/info")
+    public ServerResponse getGoodsInfo(@RequestParam Integer id){
+        return  goodsService.getGoodsInfo(id);
+   }
+   @GetMapping(value = "find/all/goods")
+    public GetAllGoodsResponse findAllGoods(@RequestParam Integer pageNumber, @RequestParam Integer pageSize){
+                   return    goodsService.findAllGoods(pageNumber,pageSize);
+   }
 
 }

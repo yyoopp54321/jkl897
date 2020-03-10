@@ -11,23 +11,20 @@ import com.example.jkl.pojo.Store;
 import com.example.jkl.request.AddGoodsRequest;
 import com.example.jkl.request.UpdateGoodsRequest;
 import com.example.jkl.request.UpdateGoodsStatusRequest;
+import com.example.jkl.response.FindGoodsInfoResponse;
 import com.example.jkl.response.FindGoodsResponse;
-import com.example.jkl.service.FileService;
+import com.example.jkl.response.GetAllGoodsResponse;
 import com.example.jkl.service.GoodsService;
-import com.example.jkl.utils.PropertiesUtil;
+import com.example.jkl.service.UploadService;
 import com.github.pagehelper.PageHelper;
 import com.github.pagehelper.PageInfo;
-import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 
 @Slf4j
@@ -42,19 +39,14 @@ public class GoodsServiceImpl implements GoodsService {
     @Autowired
     StoreDao storeDao;
     @Autowired
-    FileService fileService;
+    UploadService uploadService;
 
     @Override
     public ServerResponse addGoods(AddGoodsRequest addGoodsRequest) {
          Goods goods=new Goods();
-         goods.setMainImageUrl(addGoodsRequest.getMainImageUrl());
-         String [] UrlArray =goods.getSubImagesUrl().split(",");
+         BeanUtils.copyProperties(addGoodsRequest,goods);
+         String [] UrlArray =addGoodsRequest.getSubImagesUrl().split(",");
          goods.setSubImagesUrl(UrlArray[0]);
-         goods.setName(addGoodsRequest.getName());
-         goods.setBrief(addGoodsRequest.getGBrief());
-         goods.setPrice(addGoodsRequest.getGPrice());
-         goods.setgAddress(addGoodsRequest.getGAddress());
-         goods.setStatus(addGoodsRequest.getStatus());
         Integer integer = goodsDao.addGoods(goods);
         if (integer>0){
             return ServerResponse.createBySuccessData("添加商品成功");
@@ -92,6 +84,8 @@ public class GoodsServiceImpl implements GoodsService {
     public ServerResponse updateGoods(UpdateGoodsRequest updateGoodsRequest) {
         Goods goods = new Goods();
         goods.setMainImageUrl(updateGoodsRequest.getMainImageUrl());
+        String [] UrlArray =goods.getSubImagesUrl().split(",");
+        goods.setSubImagesUrl(UrlArray[0]);
         goods.setSubImagesUrl(updateGoodsRequest.getSubImagesUrl());
         goods.setgAddress(updateGoodsRequest.getGAddress());
         goods.setPrice(updateGoodsRequest.getPrice());
@@ -108,38 +102,54 @@ public class GoodsServiceImpl implements GoodsService {
 
 
     @Override
-    public List<FindGoodsResponse> findGoodsByGName(String gName, Integer pageNumber, Integer pageSize) {
+    public GetAllGoodsResponse findGoodsByGName(String gName, Integer pageNumber, Integer pageSize) {
         PageHelper.startPage(pageNumber, pageSize);
         List<Goods> all = goodsDao.findGoodsByGName(gName);
-        PageInfo<Goods> pageInfo = new PageInfo<>(all);
-        log.info("all-{}", all);
-        log.info("pageInfo.getList()-{}", pageInfo.getList());
-        log.info("pageNumber-{},pageSize-{}", pageNumber, pageSize);
-        List<Goods> goods = pageInfo.getList();
-        return ShowFindProductResponse(goods);
-    }
-    private List<FindGoodsResponse> ShowFindProductResponse(List<Goods> goods) {
         List<FindGoodsResponse> goodsResponseList=new ArrayList<>();
-        for(Goods goods1:goods){
+        for (Goods goods:all){
             FindGoodsResponse findGoodsResponse=new FindGoodsResponse();
-            BeanUtils.copyProperties(goods1,findGoodsResponse);
+            BeanUtils.copyProperties(goods,findGoodsResponse);
             goodsResponseList.add(findGoodsResponse);
         }
-        return goodsResponseList;
+        PageInfo<FindGoodsResponse> pageInfo = new PageInfo<>(goodsResponseList);
+        GetAllGoodsResponse getAllGoodsResponse = new GetAllGoodsResponse();
+        getAllGoodsResponse.setTotal( pageInfo.getTotal());
+        getAllGoodsResponse.setFindGoodsResponseList(pageInfo.getList());
+        return getAllGoodsResponse;
+    }
+
+   
+
+
+    @Override
+    public  ServerResponse getGoodsInfo(Integer id) {
+
+        Goods goods= goodsDao.findGoodsById(id);
+        FindGoodsInfoResponse findGoodsInfoResponse = new FindGoodsInfoResponse();
+        BeanUtils.copyProperties(goods,findGoodsInfoResponse );
+        return ServerResponse.createBySuccessData(findGoodsInfoResponse);
+
     }
 
 
-    /*@Override
-    public List<Goods> findAllGoods(Integer pageNumber, Integer pageSize) {
+    @Override
+    public GetAllGoodsResponse findAllGoods(Integer pageNumber, Integer pageSize) {
+
         //开始分页必须写在上面
         PageHelper.startPage(pageNumber, pageSize);
         List<Goods> all = goodsDao.findAllGoods();
-        PageInfo<Goods> pageInfo = new PageInfo<>(all);
-        log.info("all-{}", all);
-        log.info("pageInfo.getList()-{}", pageInfo.getList());
-        log.info("pageNumber-{},pageSize-{}", pageNumber, pageSize);
-        return pageInfo.getList();
-    }*/
+        List<FindGoodsResponse> goodsResponseList=new ArrayList<>();
+        for (Goods goods:all){
+            FindGoodsResponse findGoodsResponse=new FindGoodsResponse();
+            BeanUtils.copyProperties(goods,findGoodsResponse);
+            goodsResponseList.add(findGoodsResponse);
+        }
+        PageInfo<FindGoodsResponse> pageInfo = new PageInfo<>(goodsResponseList);
+        GetAllGoodsResponse getAllGoodsResponse = new GetAllGoodsResponse();
+        getAllGoodsResponse.setTotal( pageInfo.getTotal());
+        getAllGoodsResponse.setFindGoodsResponseList(pageInfo.getList());
+        return getAllGoodsResponse;
+    }
 
 
 
@@ -162,53 +172,62 @@ public class GoodsServiceImpl implements GoodsService {
         Store store = storeList.get(0);
         PageHelper.startPage(pageNumber, pageSize);
         List<Goods> all = goodsDao.findGoodsByStoreId(store.getId());
-        PageInfo<Goods> pageInfo = new PageInfo<>(all);
-        log.info("all-{}", all);
-        log.info("pageInfo.getList()-{}", pageInfo.getList());
-        log.info("pageNumber-{},pageSize-{}", pageNumber, pageSize);
-        List<Goods> goods = pageInfo.getList();
-        return ServerResponse.createBySuccessData(goods);
-    }
-    public ServerResponse upload(MultipartFile multipartFile, String uploadPath) {
-        String fileName =  fileService.upload(multipartFile, uploadPath);
-        Map resultMap = Maps.newHashMap();
-        if (StringUtils.isBlank(fileName)) {
-            resultMap.put("success",false);
-            resultMap.put("msg","上传文件失败");
-            return ServerResponse.createBySuccessData(resultMap);
+        List<FindGoodsResponse> goodsResponseList=new ArrayList<>();
+        for (Goods goods:all){
+            FindGoodsResponse findGoodsResponse=new FindGoodsResponse();
+            BeanUtils.copyProperties(goods,findGoodsResponse);
+            goodsResponseList.add(findGoodsResponse);
         }
-        String url = PropertiesUtil.getProperty("ftp.server.http.prefix") + fileName;
-        resultMap.put("success",true);
-        resultMap.put("url",url);
-        resultMap.put("uri",fileName);
-        return ServerResponse.createBySuccessData(resultMap);
+        PageInfo<FindGoodsResponse> pageInfo = new PageInfo<>(goodsResponseList);
+        GetAllGoodsResponse getAllGoodsResponse = new GetAllGoodsResponse();
+        getAllGoodsResponse.setTotal( pageInfo.getTotal());
+        getAllGoodsResponse.setFindGoodsResponseList(pageInfo.getList());
+        return ServerResponse.createBySuccessData(getAllGoodsResponse);
     }
 
-    public ServerResponse productImageUpload(Integer productId, MultipartFile mainImage, List<MultipartFile> subImage, String uploadPath) {
-        Goods goods = goodsDao.findGoodsById(productId);
+    @Override
+    public Integer selectCount(Goods goods) {
+        return selectCount(goods);
+    }
+    /*@Override
+    public ServerResponse MainImageUpload(Integer id, MultipartFile mainImage,String uploadPath) {
+        Goods goods = goodsDao.findGoodsById(id);
         if (goods == null) {
             return ServerResponse.createByErrorMessage("此productId对应的商品不存在");
         }
-        String mainImageUrl =  fileService.upload(mainImage, uploadPath);
-        if (StringUtils.isBlank(mainImageUrl)) {
+
+        String mainImageUrl = String.valueOf(uploadService.fileUpload(mainImage, uploadPath));
+        if (StringUtils.isBlank( mainImageUrl)) {
             return ServerResponse.createByErrorMessage("上传商品图片失败");
         }
-        String subImageUrl = "";
-        for (int i = 0; i < subImage.size(); i++) {
-            MultipartFile image = subImage.get(i);
-            String imageUrl =  fileService.upload(image, uploadPath);
-            if (StringUtils.isBlank(imageUrl)) {
-                return ServerResponse.createByErrorMessage("上传商品图片失败");
-            }
-            if (i == 0) {
-                subImageUrl += imageUrl;
-            } else {
-                subImageUrl += "," + imageUrl;
-            }
-        }
+
         goods.setMainImageUrl(mainImageUrl);
-        goods.setSubImagesUrl(subImageUrl);
+
         goodsDao.updateGoods(goods);
         return ServerResponse.createBySuccessMessage("上传商品图片成功");
     }
+   public ServerResponse SubImageUpload(Integer id, List<MultipartFile> subImage, String uploadPath){
+       Goods goods = goodsDao.findGoodsById(id);
+       if (goods == null) {
+           return ServerResponse.createByErrorMessage("此productId对应的商品不存在");
+       }
+       String subImageUrl = "";
+
+       for (int i=0;i<subImage.size();i++) {
+           MultipartFile image = subImage.get(i);
+           String imageUrl = String.valueOf(uploadService.fileUpload(image, uploadPath));
+           if (StringUtils.isBlank(imageUrl)) {
+               return ServerResponse.createByErrorMessage("上传商品图片失败");
+           }
+           if (i == 0) {
+               subImageUrl += imageUrl;
+           } else {
+               subImageUrl += "," + imageUrl;
+           }
+
+       }
+       goods.setSubImagesUrl(subImageUrl);
+       goodsDao.updateGoods(goods);
+       return ServerResponse.createBySuccessMessage("上传商品图片成功");
+   }*/
 }

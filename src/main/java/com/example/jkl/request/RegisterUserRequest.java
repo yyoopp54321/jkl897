@@ -7,7 +7,7 @@ public class RegisterUserRequest {
     private String username;
     private String password;
     private String nickName;
-    private Integer phone;
+    private Long phone;
     private Short role;
 
 
